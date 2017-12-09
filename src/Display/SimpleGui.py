@@ -73,8 +73,8 @@ def init_display(backend_str=None, size=(1024, 768)):
     log.info("GUI backend set to: %s", used_backend)
     # wxPython based simple GUI
     if used_backend == 'wx':
+        from OCC.Display.wxDisplay import wxViewer3d
         import wx
-        from wxDisplay import wxViewer3d
 
         class AppFrame(wx.Frame):
 
@@ -107,6 +107,18 @@ def init_display(backend_str=None, size=(1024, 768)):
         win = AppFrame(None)
         win.Show(True)
         wx.SafeYield()
+        if wx.version().startswith("3.") or wx.version().startswith("4."):
+            # issue with GetHandle on Linux for wx versions
+            # >3 or 4. Window must be displayed before GetHandle is
+            # called. For that, just wait for a few milliseconds/seconds
+            # before calling InitDriver
+            # a solution is given here
+            # see https://github.com/cztomczak/cefpython/issues/349
+            # but raises an issue with wxPython 4.x
+            # finally, it seems that the sleep function does the job
+            from time import sleep
+            sleep(2)  # may be 2 seconds is too much, this might be to tune
+            wx.SafeYield()
         win.canva.InitDriver()
         app.SetTopWindow(win)
         display = win.canva._display
